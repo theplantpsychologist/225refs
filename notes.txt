@@ -2,7 +2,7 @@ Notes (for developers, notes for users goes in the readme)
 
 paper.js is ok but another option is svg.js
 
-To host the server, type in the terminal:
+To host the server, type in the terminal (aka command prompt):
     python3 -m http.server 8000
 Then, in the browser, go to 
     http://localhost:8000/
