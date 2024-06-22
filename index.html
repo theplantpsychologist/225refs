@@ -8,12 +8,6 @@
     <p>Introduction</p>
     <h1>Header1</h1>
     <noscript>Please enable javascript to use this app.</noscript>
-    <script src="apples.js"></script>
-    <script src="origami.js"></script>
-    <script src="paper-core.js"></script>
-    
-    <input type="file" id="fileInput">
-    <button></button>
 
     <div>               
         <input type="file" id="inputfile" name="inputfile" value="example.cp" />
@@ -25,6 +19,7 @@
                     input = reader.result;
                     cpObject = readCpFile(input);
                     console.log(cpObject)
+                    displayCp(cpObject,10,10,590,590);
                 };
                 const fileSelector = document.getElementById("inputfile");
                 if (fileSelector) {
@@ -36,10 +31,13 @@
         </script>
         <button id="upload" type=button onclick="UploadCp()">Upload</button>
     </div>
+    <canvas id="square" width="600" height="600"></canvas>
+    <script src="apples.js"></script>
+    <script src="origami.js"></script>
+    <script src="paper-core.js"></script>
     <script type="text/javascript" data-paper-ignore="true">
         paper.setup(document.getElementById("square"))
+        var displaycp = new paper.Group();
     </script>
-
-    <canvas id="square" width="600" height="600"></canvas>
 </body>
 </html>
