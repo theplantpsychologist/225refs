@@ -486,7 +486,7 @@ function displayCp(CP,x1,y1,x2,y2,showErrors = false,showtext = false){ //so you
                 content: CP.vertices[i].text,
                 fillColor: 'black',
                 strokeColor:'black',
-                fontSize: 15,
+                fontSize: 10,
                 strokeWidth:1
             })
             abccoords.addChild(text)

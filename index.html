@@ -8,7 +8,18 @@
     <!-- <p>Introduction</p>
     <h1>Header1</h1> -->
     <noscript>Please enable javascript to use this app.</noscript>
-    <div>               
+    <div>            
+        <script src="origami.js"></script>
+        <script src="paper-core.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.0.0/math.min.js"></script>   
+        <script type="importmap">
+            {
+            "imports": {
+                "three": "https://unpkg.com/three@v0.157.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@v0.157.0/examples/jsm/"
+            }
+            }
+        </script>
         <p>Upload a .FOLD file (with all vertices in the unit square). Select whether you would like the vertex coordinates to be in the form (a + b sqrt(2))/c, or in 4 dimensional (x,y,z,w) form.  </p>
         <input type="file" id="inputfile" name="inputfile" value="example.cp" />
         <pre id="output"></pre>
@@ -59,38 +70,29 @@
             function abc2xyzw(ax,bx,cx,ay,by,cy){
                 return [ax/cx, bx/cx + by/cy, ay/cy,-bx/cx + by/cy]
             }
-        </script>
-        <script>
-            function UploadFold() {
-                paper.project.clear();
-                const reader = new FileReader();
-                reader.onload = function () {
-                    input = reader.result;
-                    //load the cp
-                    cpObject = readFoldFile(input);
-                    console.log(cpObject)
-                    for (const vertex of cpObject.vertices) {
-                        // var x = vertex.x
-                        vertex.xabc = dec2abc(abc_table, vertex.x);
-                        vertex.yabc = dec2abc(abc_table, 1-vertex.y);
-                        if (document.getElementById("abcForm").checked) {
-                            vertex.text = `[${vertex.xabc.join(', ')}]\n[${vertex.yabc.join(', ')}]`
-                        } else if (document.getElementById("xyzwForm").checked) {
-                            vertex.text = `(${abc2xyzw(...vertex.xabc,...vertex.yabc).join(', ')})`
-                        } else{vertex.text = ''}
-                    }
-                    console.log("abc coords calculated")
-                    //display the cp 
-                    displayCp(cpObject,70,70,730,730,false,true);
-
-                };
-                const fileSelector = document.getElementById("inputfile");
-                if (fileSelector) {
-                    reader.readAsText(fileSelector.files[0]);
-                } else {
-                    console.log("File input element not present");
-                }
+            function gcd(a, b) {
+                return b === 0 ? a : gcd(b, a % b);
             }
+            function floatToFraction(float) {
+                const floatStr = float.toString();
+                const decimalPlaces = floatStr.includes('.') ? floatStr.split('.')[1].length : 0;
+                const denominator = Math.pow(10, decimalPlaces);
+                const numerator = Math.round(float * denominator);
+                const commonDivisor = gcd(numerator, denominator);
+
+                if(numerator ==0){return 0}
+                if(denominator/commonDivisor == 1){return numerator / commonDivisor}
+                return `${numerator / commonDivisor}/${denominator / commonDivisor}`
+            }
+        </script>
+        <script type="module">
+            // import {test3d} from './main.js';
+            import {UploadFold} from './main.js';
+            // document.addEventListener('DOMContentLoaded', (event) => {
+            //     test3d();
+            // });
+            document.getElementById("upload").onclick = UploadFold;
+
         </script>
         <!-- <button id="upload" type=button onclick="UploadCp()">UploadCp</button> -->
         <div>
@@ -102,12 +104,25 @@
         </div>
         <button id="upload" type=button onclick="UploadFold()">Render .FOLD file</button>
     </div>
-    <canvas id="square" width="800" height="800"></canvas>
-    <script src="origami.js"></script>
-    <script src="paper-core.js"></script>
-    <script type="text/javascript" data-paper-ignore="true">
-        paper.setup(document.getElementById("square"))
-        var displaycp = new paper.Group();
-    </script>
+    <div style="display: flex;">
+        <div style="display: table-cell;border:1px solid black">
+            <canvas id="square" width="600" height="600" style="background-color: white;"></canvas>
+            <script type="text/javascript" data-paper-ignore="true">
+                paper.setup(document.getElementById("square"))
+                var displaycp = new paper.Group();
+            </script>
+        </div>
+        <div id="3dCanvas" style="height: 600px; border: 1px solid black;"></div>
+            <!-- <input type="range" min="0" max="180" value="90" id="slider">
+            <p>Slider Value: <span id="sliderValue">90</span></p>
+            <script>
+                const slider = document.getElementById("slider");
+                const sliderValue = document.getElementById("sliderValue");
+                slider.addEventListener("input", function() {
+                    sliderValue.textContent = this.value;
+                });
+            </script> -->
+        </div>
+    </div>
 </body>
 </html>
