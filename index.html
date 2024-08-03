@@ -69,7 +69,7 @@
                     for (const vertex of cpObject.vertices) {
                         // var x = vertex.x
                         vertex.xabc = dec2abc(abc_table, vertex.x);
-                        vertex.yabc = dec2abc(abc_table, vertex.y);
+                        vertex.yabc = dec2abc(abc_table, 1-vertex.y);
                     }
                     console.log("abc coords calculated")
                     //display the cp 
