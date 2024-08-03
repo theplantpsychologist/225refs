@@ -64,13 +64,14 @@ function addOrigin(){
 
 //============ 3d Display settings
 
-const vertexMaterial = new THREE.MeshBasicMaterial({color:0xff0000})
-const vertexSize = 0.01
-const edgeMaterial = new THREE.LineBasicMaterial({color:0x000000})
+// const vertexMaterial = new THREE.MeshBasicMaterial({color:0xff0000})
+// const vertexSize = 0.01
+const edgeMaterial = new THREE.MeshBasicMaterial({color:0x000000})
 
-const mountainMaterial = new THREE.LineBasicMaterial({color:0xff0000})
-const valleyMaterial = new THREE.LineBasicMaterial({color:0x0000ff})
-const axisMaterial = new THREE.LineBasicMaterial({color:0x00ff00,linewidth:30})
+const mountainMaterial = new THREE.MeshBasicMaterial({color:0xff0000})
+const valleyMaterial = new THREE.MeshBasicMaterial({color:0x0000ff})
+const axisMaterial = new THREE.MeshBasicMaterial({color:0x00ff00})
+const gridMaterial = new THREE.MeshBasicMaterial({color:0xa0a0a0})
 //======================main functions
 export function UploadFold() {
     paper.project.clear();
@@ -115,33 +116,109 @@ function display3d(cpObject){
     const projector = [
         [1, 0, 0, (1/3)**0.5],
         [0, 1, 0, (1/3)**0.5],
-        [0, 0, 1, (1/3)**0.5],
+        [0, 0, 1, (1/3)**0.5] //TODO: maybe the slider can be this value. Or, could use the "h" value from the paper to see how that changes things
     ];
+    function project4_3(coords4d){
+        return math.transpose(math.multiply(projector, math.transpose(coords4d)));
+    }
 
-    const origin_axes = new THREE.Group();
+    // const origin_axes = new THREE.Group();
     const origin = new THREE.Vector3(0,0,0);
-    const x_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(...math.transpose(math.multiply(projector, math.transpose([0.2,0,0,0]))))]);
-    const y_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(...math.transpose(math.multiply(projector, math.transpose([0,0.2,0,0]))))]);
-    const z_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(...math.transpose(math.multiply(projector, math.transpose([0,0,0.2,0]))))]);
-    const w_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(...math.transpose(math.multiply(projector, math.transpose([0,0,0,0.2]))))]);
-    origin_axes.add(new THREE.Line(x_axis,axisMaterial))
-    origin_axes.add(new THREE.Line(y_axis,axisMaterial))
-    origin_axes.add(new THREE.Line(z_axis,axisMaterial))
-    origin_axes.add(new THREE.Line(w_axis,axisMaterial))
-    scene.add(origin_axes)
+    const x_axis = project4_3([0.25,0,0,0])
+    const y_axis = project4_3([0,0.25,0,0])
+    const z_axis = project4_3([0,0,0.25,0])
+    const w_axis = project4_3([0,0,0,0.25])
+    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...x_axis)))
+    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...y_axis)))
+    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...z_axis)))
+    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...w_axis)))
 
-
-    const cpdisplay3d = new THREE.Group();
+    // const cpdisplay3d = new THREE.Group();
     for (const vertex of cpObject.vertices) {
-        var coords = math.transpose(math.multiply(projector, math.transpose(vertex.xyzw)));
-        vertex.vector = new THREE.Vector3(coords[0], coords[1], coords[2]);
+        // var coords = project4_3(vertex.xyzw);
+        vertex.vector = new THREE.Vector3(...project4_3(vertex.xyzw));
     }
     for (const crease of cpObject.creases) {
-        cpdisplay3d.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([crease.vertices[0].vector,crease.vertices[1].vector]),crease.mv=="M"?mountainMaterial:crease.mv=="V"?valleyMaterial:edgeMaterial))
+        // console.log(new THREE.BufferGeometry().setFromPoints([crease.vertices[0].vector,crease.vertices[1].vector]).position)
+        // scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([crease.vertices[0].vector,crease.vertices[1].vector]),crease.mv=="M"?mountainMaterial:crease.mv=="V"?valleyMaterial:edgeMaterial))
+        scene.add(createConnectingCylinder(crease.vertices[0].vector,crease.vertices[1].vector,0.005,crease.mv=="M"?mountainMaterial:crease.mv=="V"?valleyMaterial:edgeMaterial))
     }
-    scene.add(cpdisplay3d)
+    // Draw 4-dimensional lattice
+    const start = -1
+    const end = 2
+    const spacing = 1
 
+    //add the w lines
+    const grid = new THREE.Group();
+    for(var x = start+1; x <= end-1; x+=spacing){
+        for(var y = start+1; y <= end-1; y+=spacing){
+            for(var z = start+1; z <= end-1; z+=spacing){
+                scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...project4_3([x,y,z,start])), new THREE.Vector3(...project4_3([x,y,z,end]))]),gridMaterial))
+            }
+        }
+    }
+    //add the y lines
+    for(var x = start+1; x <= end-1; x+=spacing){
+        for(var z = start+1; z <= end-1; z+=spacing){
+            for(var w = start+1; w <= end-1; w+=spacing){
+                scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...project4_3([x,start,z,w])), new THREE.Vector3(...project4_3([x,end,z,w]))]),gridMaterial))
+            }
+        }
+    }
+    //add the z lines
+    for(var x = start+1; x <= end-1; x+=spacing){
+        for(var y = start+1; y <= end-1; y+=spacing){
+            for(var w = start+1; w <= end-1; w+=spacing){
+                scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...project4_3([x,y,start,w])), new THREE.Vector3(...project4_3([x,y,end,w]))]),gridMaterial))
+            }
+        }
+    }
+    //add the x lines
+    for(var y = start+1; y <= end-1; y+=spacing){
+        for(var z = start+1; z <= end-1; z+=spacing){
+            for(var w = start+1; w <= end-1; w+=spacing){
+                scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...project4_3([start,y,z,w])), new THREE.Vector3(...project4_3([end,y,z,w]))]),gridMaterial))
+            }
+        }
+    }
 }
+
+
+
+function createConnectingCylinder(start, end,r=0.01,material=axisMaterial) {
+    // Calculate the direction vector from start to end
+    const direction = new THREE.Vector3().subVectors(end, start);
+    
+    // Calculate the length of the cylinder
+    const length = direction.length();
+    
+    // Calculate the midpoint between start and end
+    const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    
+    // Create the cylinder geometry
+    const cylinderGeometry = new THREE.CylinderGeometry(r, r, length, 8, 1, true);
+    
+    // Create the cylinder mesh
+    const cylinder = new THREE.Mesh(cylinderGeometry, material);
+    
+    // Align the cylinder with the direction vector
+    const orientation = new THREE.Matrix4();
+    orientation.lookAt(start, end, new THREE.Vector3(0, 1, 0));
+    
+    // Rotate the cylinder to align with the direction vector
+    const rotationMatrix = new THREE.Matrix4();
+    rotationMatrix.makeRotationX(Math.PI / 2);
+    orientation.multiply(rotationMatrix);
+    
+    // Apply the orientation to the cylinder
+    cylinder.applyMatrix4(orientation);
+    
+    // Position the cylinder at the midpoint
+    cylinder.position.copy(midpoint);
+    
+    return cylinder;
+}
+
 //======================ui things
 //detect click
 //if there's a vertex in the raytrace, attach it to the transform controls. otherwise detatch
