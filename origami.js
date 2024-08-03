@@ -432,7 +432,7 @@ function split(creases,vertices){
     return[creases,vertices]
     //when this is done, fix the read cp function
 }
-function displayCp(CP,x1,y1,x2,y2,showErrors = true){ //so you can position where to draw it
+function displayCp(CP,x1,y1,x2,y2,showErrors = false,showabc = false){ //so you can position where to draw it
     function convertx(cp){
         //Converting cp coords, which range from 0,1, into js coords which range from x1,x2 and y1,y2
         return x1+cp*(x2-x1);
@@ -455,7 +455,6 @@ function displayCp(CP,x1,y1,x2,y2,showErrors = true){ //so you can position wher
         creaselines.addChild(line);
     }
     creaselines.strokeWidth = (x2-x1)/200;
-
     var cp = new paper.Group()
     cp.addChild(creaselines)
     if(showErrors){
@@ -472,6 +471,28 @@ function displayCp(CP,x1,y1,x2,y2,showErrors = true){ //so you can position wher
             }
         }
         cp.addChild(errorcircles)}
+    if(showabc){
+        console.log("displaying coords")
+        var abccoords = new paper.Group();
+        for(i=0;i<CP.vertices.length;i++){
+            // var dot = new paper.Path.Circle({
+            //     point: new paper.Point(convertx(CP.vertices[i].x),converty(CP.vertices[i].y)),
+            //     radius: (x2-x1)/600,
+            //     fillColor: 'black'
+            // })
+            // abccoords.addChild(dot)
+            var text = new paper.PointText({
+                point: new paper.Point(convertx(CP.vertices[i].x),converty(CP.vertices[i].y)),
+                content: `[${CP.vertices[i].xabc.join(', ')}]\n[${CP.vertices[i].yabc.join(', ')}]`,
+                fillColor: 'black',
+                strokeColor:'black',
+                fontSize: 10,
+                strokeWidth:1
+            })
+            abccoords.addChild(text)
+        }
+        cp.addChild(abccoords)
+    }
     return cp
 }
 function convertFOLD(cp) {
