@@ -5,179 +5,124 @@
     <title>Document</title>
 </head>
 <body>
-    <p>Introduction</p>
-    <h1>Header1</h1>
+    <!-- <p>Introduction</p>
+    <h1>Header1</h1> -->
     <noscript>Please enable javascript to use this app.</noscript>
-
-    <div>               
+    <div>            
+        <script src="origami.js"></script>
+        <script src="paper-core.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.0.0/math.min.js"></script>   
+        <script type="importmap">
+            {
+            "imports": {
+                "three": "https://unpkg.com/three@v0.157.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@v0.157.0/examples/jsm/"
+            }
+            }
+        </script>
+        <p>Upload a .FOLD file (with all vertices in the unit square). Select whether you would like the vertex coordinates to be in the form (a + b sqrt(2))/c, or in 4 dimensional (x,y,z,w) form.  </p>
         <input type="file" id="inputfile" name="inputfile" value="example.cp" />
         <pre id="output"></pre>
         <script>
-            function UploadCp() {
-                const reader = new FileReader();
-                reader.onload = function () {
-                    input = reader.result;
-
-                    //load the cp
-                    cpObject = readCpFile(input);
-                    console.log(cpObject)
-                    console.log(cpObject.vertices)
-                    for(const vertex of cpObject.vertices){
-                        console.log(vertex.x,vertex.y)
+            let abc_table = {};
+            // Fetch the JSON file and store it in abc_table
+            fetch('./abc_table.json')
+                .then(response => response.json())
+                .then(data => {
+                    abc_table = data;
+                })
+                .catch(error => console.error('Error loading JSON:', error));
+            function dec2abc(abcTable, target) {
+                const keys = Object.keys(abcTable).map(parseFloat);
+                //Binary search, using initial estimate of the index assuming an even distribution of keys
+                let left = Math.max(0)//,keys.length * target - 10000);
+                let right = Math.min(keys.length-1)//,keys.length * target + 10000);
+                while (left < right) {
+                    const mid = Math.floor((left + right) / 2);
+                    if (keys[mid] === target) {
+                        if (keys[mid] === 0) {
+                            return [0,0,1]
+                        } else if (keys[mid] ==1){
+                            return  [1,0,1]
+                        }
+                        else {return abcTable[keys[mid]]};
+                        // console.log(`top target:${target},closestkey:${mid},output:${abcTable[keys[mid]]}`)
+                        // break
+                        // return abcTable[keys[mid]];
+                    } else if (keys[mid] < target) {
+                        left = mid + 1;
+                    } else {
+                        right = mid;
                     }
-                    console.log(cpObject.creases)
-                    //do computations here
-                    // if(eq(a,b)){
-                    //     console.log("a is equal to b")
-                    // }
-
-                    //begin added bit -------------------------------------------
-                    //This is set up for the functionality described below, but not yet implemented to input the vertices and output the most convenient reference heights.  It's not yet complete either, but it can reliably go from a decimal approx of a radical back to the radical if the radical has a periodicity of less than 5, and has nothing before the periodic part.
-                    //We need to input a decimal, and then output the continued fraction corresponding to this decimal as a set of three values: the integer component, the pre-repeating decimal component, and the repeating decimal component.  Next, these three components will be used to calculate the radical version of the decimal approximation.
-
-                    const decApprox = 2.623615032630766;
-                    let coefficients = [];
-
-                    //takes the decimal (decApprox) as an input, and outputs the first 25 coefficients of its continued fraction as an array (coefficients)
-                    function writeCF(decApprox) {
-                    while (!Number.isInteger(decApprox)) {
-                    let integerPart = Math.floor(decApprox); 
-                    coefficients.push(integerPart);
-                    decApprox = 1 / (decApprox - integerPart);
-                    if (Number.isInteger(decApprox)) {
-                    coefficients.push(Math.floor(decApprox));
-                    }
-                    // Add a safeguard to prevent infinite loops
-                    if (coefficients.length > 25) {
-                        //console.error('Exceeded maximum iterations without converging.');
-                        break;
-                    }}}
-
-                    writeCF(decApprox);
-                    console.log(decApprox);
-                    console.log('Coefficients: ' + coefficients);
-
-                    //takes the coefficients array, as well as the desired sequence length (4), search length (25), and outputs the periodicity of the CF, if it is found to be periodic, and the location where the periodicity begins (start)
-                    function findRepeat(arr, sequenceLength, searchLength) {
-                    const sequencePositions = {};
-
-                    // Search within the first `searchLength` elements
-                    for (let i = 0; i <= Math.min(arr.length, searchLength) - sequenceLength; i++) {
-                        const sequence = arr.slice(i, i + sequenceLength).join(',');
-
-                        if (sequencePositions.hasOwnProperty(sequence)) {
-                        const firstOccurrence = sequencePositions[sequence];
-                        const periodicity = i - firstOccurrence;
-                        return {
-                            sequence: sequence.split(',').map(Number),
-                            periodicity: periodicity,
-                            start: firstOccurrence
-                        };
-                        } else {
-                        sequencePositions[sequence] = i;
-                        }}
-                    return null; // No repeating sequence found
-                    }
-
-                    const result = findRepeat(coefficients, 7, 25);
-
-                    console.log("Periodicity: " + result.periodicity);
-                    console.log("Start of Periodicity: " + result.start);
-                    result.sequence = (coefficients.slice(result.start,(result.start+result.periodicity)));
-                    const prePeriodic = coefficients.slice(0, result.start);
-                    console.log("Periodic Sequence: " + result.sequence)
-
-                    function solveRadical(pS) {
-                    let a;
-                    let b;
-                    let c;
-                    switch(pS.length) {
-                    case 1:
-                        a = 1;
-                        b = pS[0];
-                        c = -1;
-                        break;
-                    case 2:
-                        a = pS[0];
-                        b = (pS[0] * pS[1]);
-                        c = -pS[1];
-                        break;
-                    case 3:
-                        a = (pS[0] * pS[1]) + 1;
-                        b = ((pS[0]) * (pS[1]) * (pS[2])) + pS[0] - pS[1] + pS[2];
-                        c = -(((pS[1]) * (pS[2])) + 1);
-                        break;
-                    case 4:
-                        a = ((pS[0] * pS[1] * pS[2]) + pS[0] + pS[2]);
-                        b = ((pS[0] * pS[1] * pS[2] * pS[3]) + (pS[0] * pS[1]) + (pS[0] * pS[3]) + (pS[2] * pS[3]) - (pS[1] * pS[2]));
-                        c = -((pS[1] * pS[2] * pS[3]) + pS[1] + pS[3]);
-                        break;
-                    default: 
-                        console.log('That number is too scary for me to deal with yet');
-                    }
-                    return [a, b, c];
-                    };
-
-                    //saves the a, b, c of the radical form of the periodic part as an array to variable abc.
-                    const abc = solveRadical(result.sequence);
-                    const qA = abc[0];
-                    const qB = abc[1];
-                    const qC = abc[2];
-
-                    function quadratic (a, b, c) {
-                    if (((-b + (Math.sqrt((b * b) - (4 * a * c))))/(2 * a)) > 0) {
-                        return [-b, (Math.sqrt(((b * b) - (4 * a * c)) / 2)), 2 * a];
-                        } else {
-                        return [-b, -(Math.sqrt(((b * b) - (4 * a * c)) / 2)), 2 * a];
-                    }}
-
-                    console.log("Pre-periodic: " + prePeriodic)
-                    const values = quadratic(qA, qB, qC);
-                    console.log(values)
-
-                    function solvePrePeriodic (prePeriodic){
-                    for (let j = prePeriodic.length; j > 0; j--){
-                        prePeriodic[j-2] += (1 / (prePeriodic[j-1]));
-                    }
-                    return prePeriodic[0];
-                    }
-
-                    const evalPrePeriodic = solvePrePeriodic(prePeriodic);
-
-                    function convertToFrac (num){
-                    let a=0
-                    while (!(Number.isInteger(num))){
-                        num *= 10;
-                        a += 1;
-                    }
-                    return [num, Math.pow(10, a)];
-                    }
-
-                    const prePeriodicFrac = convertToFrac (evalPrePeriodic);
-                    console.log(prePeriodicFrac)
-
-                    //end added bit-------------------------------------------
-
-                    //display the cp 
-                    displayCp(cpObject,10,10,590,590,showErrors);
-                };
-                const fileSelector = document.getElementById("inputfile");
-                if (fileSelector) {
-                    reader.readAsText(fileSelector.files[0]);
-                } else {
-                    console.log("File input element not present");
                 }
+
+                // After the loop, left should be the closest index
+                const closestKey = (left === 0 || (left < keys.length && Math.abs(keys[left] - target) < Math.abs(keys[left - 1] - target))) ? keys[left] : keys[left - 1];
+                if (closestKey === 0) {
+                    output = [0,0,1]
+                } else if (closestKey ==1){
+                    output =  [1,0,1]
+                }
+                else {output = abcTable[closestKey]};
+                // console.log(`bottom target:${target},closestkey:${closestKey},output:${output}`)
+                return output
+            }
+            function abc2xyzw(ax,bx,cx,ay,by,cy){
+                return [ax/cx, bx/cx + by/cy, ay/cy,-bx/cx + by/cy]
+            }
+            function gcd(a, b) {
+                return b === 0 ? a : gcd(b, a % b);
+            }
+            function floatToFraction(float) {
+                const floatStr = float.toString();
+                const decimalPlaces = floatStr.includes('.') ? floatStr.split('.')[1].length : 0;
+                const denominator = Math.pow(10, decimalPlaces);
+                const numerator = Math.round(float * denominator);
+                const commonDivisor = gcd(numerator, denominator);
+
+                if(numerator ==0){return 0}
+                if(denominator/commonDivisor == 1){return numerator / commonDivisor}
+                return `${numerator / commonDivisor}/${denominator / commonDivisor}`
             }
         </script>
-        <button id="upload" type=button onclick="UploadCp()">Upload</button>
+        <script type="module">
+            // import {test3d} from './main.js';
+            import {UploadFold} from './main.js';
+            // document.addEventListener('DOMContentLoaded', (event) => {
+            //     test3d();
+            // });
+            document.getElementById("upload").onclick = UploadFold;
+
+        </script>
+        <!-- <button id="upload" type=button onclick="UploadCp()">UploadCp</button> -->
+        <div>
+            <p>Vertex annotation:</p>
+            <input type="radio" id="abcForm" name="displayOption" value="abcForm">
+            <label for="abcForm">Coordinates in a b c form</label><br>
+            <input type="radio" id="xyzwForm" name="displayOption" value="xyzwForm">
+            <label for="xyzwForm">Coordinates in (x,y,z,w) form</label><br>
+        </div>
+        <button id="upload" type=button onclick="UploadFold()">Render .FOLD file</button>
     </div>
-    <canvas id="square" width="600" height="600"></canvas>
-    <script src="apples.js"></script>
-    <script src="origami.js"></script>
-    <script src="paper-core.js"></script>
-    <script type="text/javascript" data-paper-ignore="true">
-        paper.setup(document.getElementById("square"))
-        var displaycp = new paper.Group();
-    </script>
+    <div style="display: flex;">
+        <div style="display: table-cell;border:1px solid black">
+            <canvas id="square" width="600" height="600" style="background-color: white;"></canvas>
+            <script type="text/javascript" data-paper-ignore="true">
+                paper.setup(document.getElementById("square"))
+                var displaycp = new paper.Group();
+            </script>
+        </div>
+        <div id="3dCanvas" style="height: 600px; border: 1px solid black;"></div>
+            <!-- <input type="range" min="0" max="180" value="90" id="slider">
+            <p>Slider Value: <span id="sliderValue">90</span></p>
+            <script>
+                const slider = document.getElementById("slider");
+                const sliderValue = document.getElementById("sliderValue");
+                slider.addEventListener("input", function() {
+                    sliderValue.textContent = this.value;
+                });
+            </script> -->
+        </div>
+    </div>
 </body>
 </html>
