@@ -8,7 +8,6 @@
     <!-- <p>Introduction</p>
     <h1>Header1</h1> -->
     <noscript>Please enable javascript to use this app.</noscript>
-    <p>Upload a .FOLD file and it will convert the coordinates into (a+b sqrt2)/c form</p>
     <div>               
         <input type="file" id="inputfile" name="inputfile" value="example.cp" />
         <pre id="output"></pre>
@@ -56,6 +55,9 @@
                 // console.log(`bottom target:${target},closestkey:${closestKey},output:${output}`)
                 return output
             }
+            function abc2xyzw(ax,bx,cx,ay,by,cy){
+                return [ax/cx, bx/cx + by/cy, ay/cy,-bx/cx + by/cy]
+            }
         </script>
         <script>
             function UploadFold() {
@@ -70,6 +72,11 @@
                         // var x = vertex.x
                         vertex.xabc = dec2abc(abc_table, vertex.x);
                         vertex.yabc = dec2abc(abc_table, 1-vertex.y);
+                        if (document.getElementById("abcForm").checked) {
+                            vertex.text = `[${vertex.xabc.join(', ')}]\n[${vertex.yabc.join(', ')}]`
+                        } else if (document.getElementById("xyzwForm").checked) {
+                            vertex.text = `(${abc2xyzw(...vertex.xabc,...vertex.yabc).join(', ')})`
+                        } else{vertex.text = ''}
                     }
                     console.log("abc coords calculated")
                     //display the cp 
@@ -85,7 +92,14 @@
             }
         </script>
         <!-- <button id="upload" type=button onclick="UploadCp()">UploadCp</button> -->
-        <button id="upload" type=button onclick="UploadFold()">UploadFold</button>
+        <button id="upload" type=button onclick="UploadFold()">Upload .FOLD file</button>
+        <div>
+            <p>Vertex annotation:</p>
+            <input type="radio" id="abcForm" name="displayOption" value="abcForm">
+            <label for="abcForm">Coordinates in a b c form</label><br>
+            <input type="radio" id="xyzwForm" name="displayOption" value="xyzwForm">
+            <label for="xyzwForm">Coordinates in (x,y,z,w) form</label><br>
+        </div>
     </div>
     <canvas id="square" width="800" height="800"></canvas>
     <script src="origami.js"></script>

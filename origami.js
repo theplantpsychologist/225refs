@@ -432,7 +432,7 @@ function split(creases,vertices){
     return[creases,vertices]
     //when this is done, fix the read cp function
 }
-function displayCp(CP,x1,y1,x2,y2,showErrors = false,showabc = false){ //so you can position where to draw it
+function displayCp(CP,x1,y1,x2,y2,showErrors = false,showtext = false){ //so you can position where to draw it
     function convertx(cp){
         //Converting cp coords, which range from 0,1, into js coords which range from x1,x2 and y1,y2
         return x1+cp*(x2-x1);
@@ -471,7 +471,7 @@ function displayCp(CP,x1,y1,x2,y2,showErrors = false,showabc = false){ //so you 
             }
         }
         cp.addChild(errorcircles)}
-    if(showabc){
+    if(showtext){
         console.log("displaying coords")
         var abccoords = new paper.Group();
         for(i=0;i<CP.vertices.length;i++){
@@ -483,7 +483,7 @@ function displayCp(CP,x1,y1,x2,y2,showErrors = false,showabc = false){ //so you 
             // abccoords.addChild(dot)
             var text = new paper.PointText({
                 point: new paper.Point(convertx(CP.vertices[i].x),converty(CP.vertices[i].y)),
-                content: `[${CP.vertices[i].xabc.join(', ')}]\n[${CP.vertices[i].yabc.join(', ')}]`,
+                content: CP.vertices[i].text,
                 fillColor: 'black',
                 strokeColor:'black',
                 fontSize: 10,
