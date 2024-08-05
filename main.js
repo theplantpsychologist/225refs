@@ -201,6 +201,7 @@ export function display3d(cpObject){
         scene.add(createConnectingCylinder(crease.vertices[0].vector,crease.vertices[1].vector,0.005,crease.mv=="M"?mountainLineMaterial:crease.mv=="V"?valleyLineMaterial:edgeLineMaterial))
 
         try{
+            console.log()
             var points = calculate(crease.vertices[0].xyzw,crease.vertices[1].xyzw)
             console.log(points)
             points = points.map(point => new THREE.Vector3(...project4_3(point)))
@@ -338,7 +339,7 @@ function calculate(xyzw1, xyzw2) {
     var xyzw2plus
     switch (nonZeroCount) {
         case 0:
-            console.log("vertices are the same");
+            console.log("case 0: vertices are the same");
             return [xyzw1, xyzw1, xyzw2, xyzw2];
 
         case 1:
@@ -346,7 +347,7 @@ function calculate(xyzw1, xyzw2) {
             const sign = deltas[direction] > 0 ? 1 : -1;
             [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
             [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
-            console.log(sign * direction);
+            console.log("case 1",sign * direction);
             return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];}
 
         case 2:
@@ -363,21 +364,24 @@ function calculate(xyzw1, xyzw2) {
                 }
                 const [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
                 const [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
-                console.log(sign * direction);
+                console.log("case 2",sign * direction);
                 return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];
             } else {
-                console.log("case 2");
+                console.log("22.5 crease");
                 break
             }
             break;
 }
         case 3:
-            {const perpendicular = nonzeroIndices.find(i => !nonzeroIndices.includes(i));
+            {//const perpendicular = nonzeroIndices.find(i => !nonzeroIndices.includes(i));
+            
+            
+            const perpendicular = deltas.findIndex(delta => delta === 0);
             const direction = (perpendicular + 2) % 4;
             const sign = 1; // This is a guess, as noted in the original code
             const [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
             const [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
-            // console.log(sign * direction);
+            console.log("case 3",sign,direction);
             return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];}
 
         case 4:
