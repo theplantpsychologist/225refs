@@ -300,7 +300,7 @@ function createConnectingCylinder(start, end,r=0.01,material=axisMaterial) {
 function sign(x) {
     return Math.sign(x);
 }
-const resolution = 1
+const resolution = 2
 function adjustValue45(arr, index, adjustment) {
     if (index < 0) {
         arr[3] += -adjustment;
