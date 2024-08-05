@@ -34,6 +34,9 @@ npx vite
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// import * as THREE from './three.module.js';
+// import { OrbitControls } from './OrbitControls.js';
+
 
 const mainCanvas = document.getElementById("3dCanvas")
 //add main scene
@@ -49,30 +52,72 @@ camera.lookAt(0,0,0);
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.update();
 
-function addOrigin(){
-    const origin_axes = new THREE.Group();
-    const origin = new THREE.Vector3(0,0,0);
-    const x_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(0.1,0,0)]);
-    const y_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(0,0.1,0)]);
-    const z_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(0,0,0.1)]);
-    origin_axes.add(new THREE.Line(x_axis,new THREE.LineBasicMaterial({color:0xff0000,linewidth:10})))
-    origin_axes.add(new THREE.Line(y_axis,new THREE.LineBasicMaterial({color:0x00ff00})))
-    origin_axes.add(new THREE.Line(z_axis,new THREE.LineBasicMaterial({color:0x0000ff})))
-    scene.add(origin_axes)
-    return origin_axes
-}
+// function addOrigin(){
+//     const origin_axes = new THREE.Group();
+//     const origin = new THREE.Vector3(0,0,0);
+//     const x_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(0.1,0,0)]);
+//     const y_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(0,0.1,0)]);
+//     const z_axis = new THREE.BufferGeometry().setFromPoints([origin,new THREE.Vector3(0,0,0.1)]);
+//     origin_axes.add(new THREE.Line(x_axis,new THREE.LineBasicMaterial({color:0xff0000,linewidth:10})))
+//     origin_axes.add(new THREE.Line(y_axis,new THREE.LineBasicMaterial({color:0x00ff00})))
+//     origin_axes.add(new THREE.Line(z_axis,new THREE.LineBasicMaterial({color:0x0000ff})))
+//     scene.add(origin_axes)
+//     return origin_axes
+// }
 
 //============ 3d Display settings
 
 // const vertexMaterial = new THREE.MeshBasicMaterial({color:0xff0000})
 // const vertexSize = 0.01
-const edgeMaterial = new THREE.MeshBasicMaterial({color:0x000000})
-
-const mountainMaterial = new THREE.MeshBasicMaterial({color:0xff0000})
-const valleyMaterial = new THREE.MeshBasicMaterial({color:0x0000ff})
-const axisMaterial = new THREE.MeshBasicMaterial({color:0x00ff00})
-const gridMaterial = new THREE.MeshBasicMaterial({color:0xa0a0a0})
+const edgeLineMaterial = new THREE.MeshBasicMaterial({color:0x000000})
+const mountainLineMaterial = new THREE.MeshBasicMaterial({color:0xff0000})
+const valleyLineMaterial = new THREE.MeshBasicMaterial({color:0x0000ff})
+const edgePlaneMaterial = new THREE.MeshBasicMaterial({color:0x000000,opacity:0.2,transparent:true})
+const mountainPlaneMaterial = new THREE.MeshBasicMaterial({color:0xff0000,opacity:0.2,transparent:true})
+const valleyPlaneMaterial = new THREE.MeshBasicMaterial({color:0x0000ff,opacity:0.2,transparent:true})
+const axisMaterial = new THREE.MeshBasicMaterial({color:0x00ff00,opacity:0.5,transparent:true})
+const gridMaterial = new THREE.MeshBasicMaterial({color:0xa0a0a0,opacity:0.5,transparent:true})
 //======================main functions
+// export function UploadFold() {
+//     return new Promise((resolve, reject) => {
+//         paper.project.clear();
+//         const reader = new FileReader();
+//         reader.onload = function () {
+//             const input = reader.result;
+//             // Load the cp
+//             const cpObject = readFoldFile(input);
+//             console.log(cpObject);
+//             for (const vertex of cpObject.vertices) {
+//                 vertex.xabc = dec2abc(abc_table, vertex.x);
+//                 vertex.yabc = dec2abc(abc_table, 1 - vertex.y);
+//                 vertex.xyzw = abc2xyzw(...vertex.xabc, ...vertex.yabc);
+//                 if (document.getElementById("abcForm").checked) {
+//                     vertex.text = `[${vertex.xabc.join(', ')}]\n[${vertex.yabc.join(', ')}]`;
+//                 } else if (document.getElementById("xyzwForm").checked) {
+//                     var idk = vertex.xyzw.map(float => Math.trunc(float * 1000) / 1000);
+//                     vertex.text = `(${idk.join(', ')})`;
+//                 } else {
+//                     vertex.text = '';
+//                 }
+//             }
+
+//             console.log("abc coords calculated");
+//             // Display the cp
+//             displayCp(cpObject, 50, 50, 550, 550, false, true);
+//             display3d(cpObject);
+//             resolve(cpObject);
+//         };
+//         reader.onerror = function (error) {
+//             reject(error);
+//         };
+//         const fileSelector = document.getElementById("inputfile");
+//         if (fileSelector) {
+//             reader.readAsText(fileSelector.files[0]);
+//         } else {
+//             reject(new Error("File input element not present"));
+//         }
+//     });
+// }
 export function UploadFold() {
     paper.project.clear();
     const reader = new FileReader();
@@ -98,7 +143,7 @@ export function UploadFold() {
         //display the cp 
         displayCp(cpObject,50,50,550,550,false,true);
         display3d(cpObject)
-
+        return cpObject
     };
     const fileSelector = document.getElementById("inputfile");
     if (fileSelector) {
@@ -107,17 +152,28 @@ export function UploadFold() {
         console.log("File input element not present");
     }
 }
-function display3d(cpObject){
+export function display3d(cpObject){
     console.log("displaying 3d")
     while (scene.children.length > 0) {
         scene.remove(scene.children[0]);
     }
     // addOrigin()
+    // const theta = document.getElementById("theta").value
+    // const projector = [
+    //     [Math.sin(theta), Math.cos(theta), Math.cos(theta), (1/3)**0.5],
+    //     [Math.cos(theta), Math.sin(theta), Math.cos(theta), (1/3)**0.5],
+    //     [Math.cos(theta), Math.cos(theta), Math.sin(theta), (1/3)**0.5] //TODO: maybe the slider can be this value. Or, could use the "h" value from the paper to see how that changes things
+    // ];
     const projector = [
-        [1, 0, 0, (1/3)**0.5],
-        [0, 1, 0, (1/3)**0.5],
-        [0, 0, 1, (1/3)**0.5] //TODO: maybe the slider can be this value. Or, could use the "h" value from the paper to see how that changes things
+        [1,0,0,(1/3)**0.5],
+        [0,1,0,(1/3)**0.5],
+        [0,0,1,(1/3)**0.5]
     ];
+    // const projector = [
+    //     [0,1,0,0],
+    //     [0,0,1,0],
+    //     [0,0,0,1]
+    // ];
     function project4_3(coords4d){
         return math.transpose(math.multiply(projector, math.transpose(coords4d)));
     }
@@ -128,20 +184,39 @@ function display3d(cpObject){
     const y_axis = project4_3([0,0.25,0,0])
     const z_axis = project4_3([0,0,0.25,0])
     const w_axis = project4_3([0,0,0,0.25])
-    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...x_axis)))
-    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...y_axis)))
-    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...z_axis)))
-    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...w_axis)))
+    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...x_axis),0.01,new THREE.MeshBasicMaterial({color:0xEDE095})))
+    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...y_axis),0.01,new THREE.MeshBasicMaterial({color:0xABD464})))
+    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...z_axis),0.01,new THREE.MeshBasicMaterial({color:0x45B53B})))
+    scene.add(createConnectingCylinder(origin,new THREE.Vector3(...w_axis),0.01,new THREE.MeshBasicMaterial({color:0x089E54})))
 
     // const cpdisplay3d = new THREE.Group();
     for (const vertex of cpObject.vertices) {
         // var coords = project4_3(vertex.xyzw);
         vertex.vector = new THREE.Vector3(...project4_3(vertex.xyzw));
+        //TODO: add a small cube marker here
     }
     for (const crease of cpObject.creases) {
         // console.log(new THREE.BufferGeometry().setFromPoints([crease.vertices[0].vector,crease.vertices[1].vector]).position)
         // scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([crease.vertices[0].vector,crease.vertices[1].vector]),crease.mv=="M"?mountainMaterial:crease.mv=="V"?valleyMaterial:edgeMaterial))
-        scene.add(createConnectingCylinder(crease.vertices[0].vector,crease.vertices[1].vector,0.005,crease.mv=="M"?mountainMaterial:crease.mv=="V"?valleyMaterial:edgeMaterial))
+        scene.add(createConnectingCylinder(crease.vertices[0].vector,crease.vertices[1].vector,0.005,crease.mv=="M"?mountainLineMaterial:crease.mv=="V"?valleyLineMaterial:edgeLineMaterial))
+
+        try{
+            var points = calculate(crease.vertices[0].xyzw,crease.vertices[1].xyzw)
+            console.log(points)
+            points = points.map(point => new THREE.Vector3(...project4_3(point)))
+            var geom = new THREE.BufferGeometry().setFromPoints(points)
+            var indices = new Uint16Array([
+                0, 1, 2,
+                0, 2, 3,
+                2,1,0, //repeat them but backwards so the mesh can be seen from both sides
+                3,2,0
+            ]);
+            geom.setIndex(new THREE.BufferAttribute(indices, 1));
+            geom.computeVertexNormals();
+            scene.add(new THREE.Mesh( geom, crease.mv=="M"?mountainPlaneMaterial:crease.mv=="V"?valleyPlaneMaterial:edgePlaneMaterial ));
+        } catch{
+            console.log("unable to create plane for crease")
+        }
     }
     // Draw 4-dimensional lattice
     const start = -1
@@ -219,6 +294,99 @@ function createConnectingCylinder(start, end,r=0.01,material=axisMaterial) {
     return cylinder;
 }
 
+
+//====================== functions to render as planes
+function sign(x) {
+    return Math.sign(x);
+}
+const resolution = 1
+function adjustValue(arr, index, adjustment) {
+    if (index < 0) {
+        arr[3] += -adjustment;
+    } else if (index >= arr.length) {
+        arr[0] += -adjustment;
+    } else {
+        arr[index] += adjustment;
+    }
+}
+function createAdjustedCopies(arr, direction, sign, resolution) {
+    let arrMinus = arr.slice();
+    arrMinus[direction] -= sign * resolution;
+    adjustValue(arrMinus, direction + 1, sign * resolution / (2 * Math.sqrt(2)));
+    adjustValue(arrMinus, direction - 1, sign * resolution / (2 * Math.sqrt(2)));
+
+    let arrPlus = arr.slice();
+    arrPlus[direction] += sign * resolution;
+    adjustValue(arrPlus, direction + 1, -sign * resolution / (2 * Math.sqrt(2)));
+    adjustValue(arrPlus, direction - 1, -sign * resolution / (2 * Math.sqrt(2)));
+
+    return [arrMinus, arrPlus];
+}
+function calculate(xyzw1, xyzw2) {
+    // Calculate deltas
+    const deltas = xyzw2.map((value, i) => value - xyzw1[i]);
+    // Find non-zero indices
+    const nonzeroIndices = deltas
+        .map((delta, i) => delta !== 0 ? i : -1)
+        .filter(index => index !== -1);
+    const nonZeroCount = nonzeroIndices.length;
+    let direction
+    var sign
+    var xyzw1minus
+    var xyzw1plus
+    var xyzw2minus
+    var xyzw2plus
+    switch (nonZeroCount) {
+        case 0:
+            console.log("vertices are the same");
+            break;
+
+        case 1:
+            {const direction = nonzeroIndices[0];
+            const sign = deltas[direction] > 0 ? 1 : -1;
+            [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
+            [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
+            console.log(sign * direction);
+            return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];}
+
+        case 2:
+            {if (JSON.stringify(nonzeroIndices) === JSON.stringify([0, 2]) || JSON.stringify(nonzeroIndices) === JSON.stringify([1, 3])) {
+                if (deltas[nonzeroIndices[0]] > 0 && deltas[nonzeroIndices[1]] > 0) {
+                    direction = (nonzeroIndices[0] + nonzeroIndices[1]) / 2;
+                    sign = 1;
+                } else if (deltas[nonzeroIndices[0]] < 0 && deltas[nonzeroIndices[1]] < 0) {
+                    direction = (nonzeroIndices[0] + nonzeroIndices[1]) / 2;
+                    sign = -1;
+                } else {
+                    direction = (nonzeroIndices[1] + 1) % 4;
+                    sign = ((nonzeroIndices[1] % 4) ? -1 : 1) * ((nonzeroIndices[1] < 0) ? -1 : 1);
+                }
+                const [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
+                const [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
+                console.log(sign * direction);
+                return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];
+            } else {
+                console.log("case 2");
+                break
+            }
+            break;
+}
+        case 3:
+            {const perpendicular = nonzeroIndices.find(i => !nonzeroIndices.includes(i));
+            const direction = (perpendicular + 2) % 4;
+            const sign = 1; // This is a guess, as noted in the original code
+            const [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
+            const [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
+            // console.log(sign * direction);
+            return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];}
+
+        case 4:
+            console.log("case 2");
+            break;
+    }
+}
+
+
 //======================ui things
 //detect click
 //if there's a vertex in the raytrace, attach it to the transform controls. otherwise detatch
@@ -254,5 +422,6 @@ function animate(){
     requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene,camera);
+    // display3d(cpObject)
 }
 animate();

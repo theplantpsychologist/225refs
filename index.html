@@ -86,13 +86,16 @@
             }
         </script>
         <script type="module">
-            // import {test3d} from './main.js';
+            // import {display3d} from './main.js';
             import {UploadFold} from './main.js';
             // document.addEventListener('DOMContentLoaded', (event) => {
             //     test3d();
             // });
-            document.getElementById("upload").onclick = UploadFold;
-
+            var cpObject
+            document.getElementById("upload").onclick = function(){
+                cpObject = UploadFold();
+                // console.log(cpObject,"it's an object!!!!")
+            };
         </script>
         <!-- <button id="upload" type=button onclick="UploadCp()">UploadCp</button> -->
         <div>
@@ -113,13 +116,15 @@
             </script>
         </div>
         <div id="3dCanvas" style="height: 600px; border: 1px solid black;"></div>
-            <!-- <input type="range" min="0" max="180" value="90" id="slider">
+            <!-- <input type="range" min="0" max="180" value="90" id="theta">
             <p>Slider Value: <span id="sliderValue">90</span></p>
-            <script>
-                const slider = document.getElementById("slider");
+            <script type="module">
+                import {display3d} from './main.js';
+                const slider = document.getElementById("theta");
                 const sliderValue = document.getElementById("sliderValue");
                 slider.addEventListener("input", function() {
                     sliderValue.textContent = this.value;
+                    display3d(cpObject)
                 });
             </script> -->
         </div>
