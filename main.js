@@ -339,7 +339,7 @@ function calculate(xyzw1, xyzw2) {
     switch (nonZeroCount) {
         case 0:
             console.log("vertices are the same");
-            break;
+            return [xyzw1, xyzw1, xyzw2, xyzw2];
 
         case 1:
             {const direction = nonzeroIndices[0];
