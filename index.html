@@ -20,7 +20,16 @@
             }
             }
         </script>
-        <p>Upload a .FOLD file (with all vertices in the unit square). Select whether you would like the vertex coordinates to be in the form (a + b sqrt(2))/c, or in 4 dimensional (x,y,z,w) form.  </p>
+        <h1>22.5 Research playground</h1>
+        <p>
+        By Brandon Wong and Travis Nolan. <a href="https://github.com/theplantpsychologist/225refs">Source code</a>
+        <br><br>
+        Upload a .FOLD file (with all vertices in the unit square). Select whether you would like the vertex coordinates to be displayed in the form (a + b sqrt(2))/c, or in 4 dimensional (x,y,z,w) form.  
+            <br><br>
+        The 4d coordinates will then be plotted in a 3d projection for easier visualization. Currently the projection matrix is fixed but eventually we would like to "rotate" the model in 4d to see it from different perspectives.
+        <br><br>
+        Finally, each crease is represented with a corresponding semi-infinite plane. The plane represents the possible locations of all points that lie on that crease in 2d. The plane is semi-infinite because a point will be infinitely far away in a certain direction as the resolution of the point's location increases (ie, the values of a,b,c will get really high). <i>We are for now only able to calculate the planes of 45 degree creases</i>
+        </p>
         <input type="file" id="inputfile" name="inputfile" value="example.cp" />
         <pre id="output"></pre>
         <script>
