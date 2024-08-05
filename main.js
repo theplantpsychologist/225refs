@@ -301,7 +301,7 @@ function sign(x) {
     return Math.sign(x);
 }
 const resolution = 1
-function adjustValue(arr, index, adjustment) {
+function adjustValue45(arr, index, adjustment) {
     if (index < 0) {
         arr[3] += -adjustment;
     } else if (index >= arr.length) {
@@ -310,16 +310,16 @@ function adjustValue(arr, index, adjustment) {
         arr[index] += adjustment;
     }
 }
-function createAdjustedCopies(arr, direction, sign, resolution) {
+function createAdjustedCopies45(arr, direction, sign, resolution) {
     let arrMinus = arr.slice();
     arrMinus[direction] -= sign * resolution;
-    adjustValue(arrMinus, direction + 1, sign * resolution / (2 * Math.sqrt(2)));
-    adjustValue(arrMinus, direction - 1, sign * resolution / (2 * Math.sqrt(2)));
+    adjustValue45(arrMinus, direction + 1, sign * resolution / ( Math.sqrt(2)));
+    adjustValue45(arrMinus, direction - 1, sign * resolution / ( Math.sqrt(2)));
 
     let arrPlus = arr.slice();
     arrPlus[direction] += sign * resolution;
-    adjustValue(arrPlus, direction + 1, -sign * resolution / (2 * Math.sqrt(2)));
-    adjustValue(arrPlus, direction - 1, -sign * resolution / (2 * Math.sqrt(2)));
+    adjustValue45(arrPlus, direction + 1, -sign * resolution / ( Math.sqrt(2)));
+    adjustValue45(arrPlus, direction - 1, -sign * resolution / ( Math.sqrt(2)));
 
     return [arrMinus, arrPlus];
 }
@@ -345,8 +345,8 @@ function calculate(xyzw1, xyzw2) {
         case 1:
             {const direction = nonzeroIndices[0];
             const sign = deltas[direction] > 0 ? 1 : -1;
-            [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
-            [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
+            [xyzw1minus, xyzw1plus] = createAdjustedCopies45(xyzw1, direction, sign, resolution);
+            [xyzw2minus, xyzw2plus] = createAdjustedCopies45(xyzw2, direction, sign, resolution);
             console.log("case 1",sign * direction);
             return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];}
 
@@ -362,8 +362,8 @@ function calculate(xyzw1, xyzw2) {
                     direction = (nonzeroIndices[1] + 1) % 4;
                     sign = ((nonzeroIndices[1] % 4) ? -1 : 1) * ((nonzeroIndices[1] < 0) ? -1 : 1);
                 }
-                const [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
-                const [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
+                const [xyzw1minus, xyzw1plus] = createAdjustedCopies45(xyzw1, direction, sign, resolution);
+                const [xyzw2minus, xyzw2plus] = createAdjustedCopies45(xyzw2, direction, sign, resolution);
                 console.log("case 2",sign * direction);
                 return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];
             } else {
@@ -379,8 +379,8 @@ function calculate(xyzw1, xyzw2) {
             const perpendicular = deltas.findIndex(delta => delta === 0);
             const direction = (perpendicular + 2) % 4;
             const sign = 1; // This is a guess, as noted in the original code
-            const [xyzw1minus, xyzw1plus] = createAdjustedCopies(xyzw1, direction, sign, resolution);
-            const [xyzw2minus, xyzw2plus] = createAdjustedCopies(xyzw2, direction, sign, resolution);
+            const [xyzw1minus, xyzw1plus] = createAdjustedCopies45(xyzw1, direction, sign, resolution);
+            const [xyzw2minus, xyzw2plus] = createAdjustedCopies45(xyzw2, direction, sign, resolution);
             console.log("case 3",sign,direction);
             return [xyzw1minus, xyzw1plus, xyzw2plus, xyzw2minus];}
 
