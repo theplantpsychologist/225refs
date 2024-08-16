@@ -12,6 +12,7 @@ ALPHA = 100 # Smoothing factor for smooth_max. Higher is more accurate but less 
 # GAMMA = 1 #another parameter for active paths
 B = 0.1 #how far away is it ok to not be a 45 degree path. >0.1
 K = 2 #how quickly to be ok with not being a 45 degree path. Must be even int (is an exponent)
+
 RESOLUTION = 100 #allowable sum of x+w+z+w+c
 with open('abc_table.json', 'r') as file:
     abc_table = json.load(file)
@@ -25,6 +26,21 @@ BASES = (
     (0,-1),
     (1/2**0.5,-1/2**0.5)
 ) #xyzw bases
+# BASES = (
+#     (1,0),
+#     (0.5,3**0.5/2),
+#     (-0.5,3**0.5/2),
+#     (-1,0),
+#     (-0.5,-3**0.5/2),
+#     (0.5,-3**0.5/2)
+# ) #hp bases
+# BASES = (
+#     (1,0),
+#     (0,1),
+#     (-1,0),
+#     (0,-1)
+# ) #bp bases
+
 # SCALE_WEIGHT = 1
 # AXIAL_45ness_WEIGHT = 1
 
@@ -37,14 +53,17 @@ def pack(flap_lengths):
         bounds += [(0, 1), (0, 1)]
     x0.append(1)
     bounds.append((None,None))
-    cons = [{'type':'ineq', 'fun': lambda x:  x[-1]}] #scale >0
+    cons = [
+            {'type':'ineq', 'fun': lambda x:  x[-1]},
+            # {'type':'eq','fun':lambda x:np.cos(np.pi/x[-1])**2 -1}
+        ] 
     
     for i in range(len(flap_lengths)):
         for j in range(i+1,len(flap_lengths)):
             # Usual circle packing no-overlap constraint:
-            # cons.append({'type':'ineq', 'fun': lambda x, i=i, j=j:
-            #     distance(x[i*2], x[i*2+1], x[j*2], x[j*2+1]) - x[-1]*(flap_lengths[i] + flap_lengths[j])
-            # })
+            cons.append({'type':'ineq', 'fun': lambda x, i=i, j=j:
+                distance(x[i*2], x[i*2+1], x[j*2], x[j*2+1]) - x[-1]*(flap_lengths[i] + flap_lengths[j])
+            })
             """
             uix = x[i*2]
             uiy = x[i*2+1]
@@ -52,7 +71,7 @@ def pack(flap_lengths):
             ujy = x[j*2+1]
             L = flap_lengths[i] + flap_lengths[j]
             """
-            # Step 1: Octagon packing no-overlap constraint:
+            # Step 1: Polygon packing no-overlap constraint:
             # cons.append({'type':'ineq', 'fun': lambda x, i=i, j=j:
             #     smooth_max([dot(x[i*2]-x[j*2], x[i*2+1]-x[j*2+1],basis[0],basis[1]) for basis in BASES], alpha=ALPHA) - x[-1]*(flap_lengths[i] + flap_lengths[j])
             # })
@@ -70,24 +89,22 @@ def pack(flap_lengths):
             #     (GAMMA*(((x[i*2]-x[j*2])**2 - (x[i*2+1]-x[j*2+1])**2)*(x[i*2] - x[j*2])*(x[i*2+1] - x[j*2+1]))**2 + BETA)
             #     - BETA
             # })
-            cons.append({'type':'ineq', 'fun': lambda x, i=i, j=j:
-                ((x[i*2]-x[j*2])**2+(x[i*2+1]-x[j*2+1])**2)**0.5 - 
-                x[-1]*(flap_lengths[i] + flap_lengths[j])*(B+1-B*math.cos(4*math.atan2(x[i*2+1]-x[j*2+1],x[i*2]-x[j*2]))**K)
-            })
+
+            # cons.append({'type':'ineq', 'fun': lambda x, i=i, j=j:
+            #     ((x[i*2]-x[j*2])**2+(x[i*2+1]-x[j*2+1])**2)**0.5 - 
+            #     x[-1]*(flap_lengths[i] + flap_lengths[j])*(B+1-B*math.cos(4*math.atan2(x[i*2+1]-x[j*2+1],x[i*2]-x[j*2]))**K)
+            # })
 
     def objective(x):
         scale = x[-1]
-        # for i in x[:-1]:
-            
-        return -1*scale#*sum([sum(dec2abc(i)) for i in x[:-1] ])
-        #attempting to minimize the sum of abc coordinates is not practical because the lookup (even with binary search) takes quite a while. Also, the abc coordinates are not continuous, so the gradient is not continuous.
-        #We have a smooth function that encourages points to go to integer locations, but even with (xyzw)/c it's not clear how to do this
 
+        # return -1*scale
+
+        # return -1*scale*(1+np.cos(np.pi*1/scale)**2)*np.sum(np.cos(np.pi*x[:-1]/scale)**2+1) #FOR BP   
+
+        return -1*scale *(1+np.cos(np.pi*1/scale)**2)*np.sum(np.cos(np.pi*x[:-1]/scale)**2+1) #FOR HP
     solution = minimize(objective, x0, bounds=bounds, constraints=cons)
     # print([round(x, 3) for x in solution.x])
-
-    
-
     return solution.x
 
 
@@ -137,14 +154,14 @@ def dec2abc(target,abc_table=abc_table):
 
     return output
 #Display functions
-def create_octagon(center, radius):
+def create_octagon(center, radius,n=8):
     """Create the vertices of an octagon centered at `center` with the given `radius` (inscribed circle radius)."""
-    vertex_radius = radius / np.cos(np.pi / 8)  # Adjust radius to be from center to vertex
-    angles = np.linspace(0, 2 * np.pi, 9)[:-1] + np.pi / 8  # 8 angles for the octagon, rotated by 22.5 degrees
+    vertex_radius = radius / np.cos(np.pi / n)  # Adjust radius to be from center to vertex
+    angles = np.linspace(0, 2 * np.pi, n+1)[:-1] + np.pi / n  # 8 angles for the octagon, rotated by 22.5 degrees
     vertices = [(center[0] + vertex_radius * np.cos(angle), center[1] + vertex_radius * np.sin(angle)) for angle in angles]
     return vertices
 
-def display_multiple(x_list, flap_lengths_list):
+def display_multiple(x_list, flap_lengths_list,ngon=len(BASES)):
     num_plots = len(x_list)
     num_cols = math.ceil(math.sqrt(num_plots))
     num_rows = math.ceil(num_plots / num_cols)
@@ -158,16 +175,16 @@ def display_multiple(x_list, flap_lengths_list):
         for i in range(len(flap_lengths)):
             center = (x[i*2], x[i*2+1])
             radius = flap_lengths[i] * scale
-            octagon = Polygon(create_octagon(center, radius), fill=False, edgecolor='blue')
+            # octagon = Polygon(create_octagon(center, radius,ngon), fill=False, edgecolor='blue')
+            # ax.add_artist(octagon)
             point = plt.Circle(center, 0.01, color='black')
             circle = plt.Circle(center, radius, fill=False, edgecolor='grey')
             ax.add_artist(point)
-            ax.add_artist(octagon)
             ax.add_artist(circle)
         ax.set_aspect('equal')
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
-        ax.set_title(f'Scale: {x[-1]:.3f}')
+        ax.set_title(f'Scale: {x[-1]:.3f},grid:{1/x[-1]:.3f}')
 
     plt.show()
 
@@ -175,11 +192,11 @@ def display_multiple(x_list, flap_lengths_list):
 N = 30
 n = 6
 flap_lengths_list = [
-    # [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],
+    [2,2,2,3,3,1,1,1,1],
     # [1+2**0.5, 1+2**0.5, 1+2**0.5, 1+2**0.5,1+2**0.5, 1,1,1,1],
     # [1+2**0.5, 1+2**0.5, 1+2**0.5, 1+2**0.5,1],
     # [1+2**0.5, 1+2**0.5,1,1]
-    [1,1,1]
+    # [1,1,1]
 ]*N
 x_list = [pack(flap_lengths) for flap_lengths in flap_lengths_list]
 top_n_solutions = sorted(x_list, key=lambda x: x[-1], reverse=True)[:n]
