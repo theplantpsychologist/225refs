@@ -1,34 +1,3 @@
-/*
-Things to figure out/implement:
-- button to reset to home view
-- implement the gradient descent
-- figure out how to use transform controls to move vertices around in the ui
-- draw faces
-- color edges/faces based on strain values
-- color vertices by fixed or not
-- concentrate positive curvature rather than try to distribute
-- control parameters from ui
-
-- self intersection?
-
-New algorithm
-- start with triangulated mesh-- can use grid but with diagonal members arbitrarily in one direction
-- error function is based on gaussian curvature of a vertex as well as edge strain. resulting gradient descent will move both a vertice's 3d position and 2d position [caveat: edges on the paper border must stay on the border]. 
-
-TODO:
-- calculate theta and thetaf of vertices (helper function to determine 3d angle of 3 points)
-- calculate the gradient of thetaf-theta with respect to position of vertex
-
-the outside angles of edge nodes don't count/are not subject to angular strain law. also edge nodes would be fixed anyways in a hole filling problem (although maybe open edges)
-would be possible to hard code but would then need to deal with edge nodes. better would be to wrie custom Tan function so angle sorting worked correctly. NaN is probably coming from acos
-
-initialize by randomizing position (but not so much that they cross) so it's more isotropic
-angular error might not be necessary, since a triangle's lengths will also be affected if an angle is off. 
-
-npx vite
-*/
-
-
 //============
 //Setup
 
@@ -166,8 +135,8 @@ export function display3d(cpObject){
     // ];
     const projector = [
         [1,0,0,(1/3)**0.5],
-        [0,1,0,(1/3)**0.5],
-        [0,0,1,(1/3)**0.5]
+        [0,0,1,(1/3)**0.5],
+        [0,1,0,(1/3)**0.5]
     ];
     // const projector = [
     //     [0,1,0,0],

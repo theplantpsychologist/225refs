@@ -21,6 +21,9 @@ def create_adjusted_copies(xyzw, direction, sign, resolution):
     return xyzw_minus, xyzw_plus
 
 def calculate(xyzw1, xyzw2):
+    """
+    Given two points in 4d space, calculate the plane that corresponds to the crease that connects them in 2d
+    """
     deltas = [xyzw2[i] - xyzw1[i] for i in range(4)]
     nonzero_indices = [i for i, delta in enumerate(deltas) if delta != 0]
     match sum(1 for delta in deltas if delta != 0):
