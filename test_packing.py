@@ -1,17 +1,19 @@
 import json
 import random
 import math
+import time
 import numpy as np
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
+from matplotlib.lines import Line2D
 
 ALPHA = 100  # Smoothing factor for smooth_max. Higher is more accurate but less smooth
 # TODO: perhaps alpha should be a function of the path lengths
 B = 0.1  # how far away is it ok to not be a 45 degree path. >0.1
 K = 2  # how quickly to be ok with not being a 45 degree path. Must be even int (is an exponent)
 C_1 = 1
-C_2 = 0
+C_2 = 1
 with open("abc_table.json", "r") as file:
     abc_table = json.load(file)
 OCT_BASES = (
@@ -25,12 +27,7 @@ OCT_BASES = (
     (1 / 2**0.5, -1 / 2**0.5),
 )  # xyzw bases
 HP_BASES = (
-    (1, 0),
-    (0.5, 3**0.5 / 2),
-    (-0.5, 3**0.5 / 2),
-    (-1, 0),
-    (-0.5, -(3**0.5) / 2),
-    (0.5, -(3**0.5) / 2),
+    (3**0.5 / 2,0.5), (0,1), (-3**0.5 / 2,0.5), (-3**0.5 / 2,-0.5), (0,-1), (3**0.5 / 2,-0.5)
 )  # hp bases
 BP_BASES = ((1, 0), (0, 1), (-1, 0), (0, -1))  # bp bases
 
@@ -38,7 +35,7 @@ BP_BASES = ((1, 0), (0, 1), (-1, 0), (0, -1))  # bp bases
 # main function
 def pack(flap_lengths, mode, x0=None):
     """Pack a set of flaps with given lengths using scipy's solver. For circle packing, mode="circle", hp mode="hp", bp mode="bp", and 22.5 mode="22.5"."""
-    if not x0:
+    if x0 is None:
         x0 = []
         for _ in flap_lengths:
             x0 += [random.random(), random.random()]
@@ -144,14 +141,18 @@ def pack(flap_lengths, mode, x0=None):
                 -1
                 * scale
                 * (C_1 + np.cos(np.pi * 1 / scale) ** 2)
-                * np.sum(np.cos(np.pi * x[:-1] / scale) ** 2 + 1)
+                * np.sum(np.cos(np.pi * x[:-1] / scale) ** 2 + C_2)
             )
         if mode == "hp":
             return (
                 -1
                 * scale
-                * (C_1 + np.cos(np.pi * 1 / scale) ** 2)
-                * np.sum(np.cos(np.pi * x[:-1] / scale) ** 2 + 1)
+                * (C_1 + np.cos(np.pi * 2 / (scale*3**0.5)) ** 2)
+                * np.sum(
+                    [(np.cos(np.pi/scale*(x[i*2+1]+x[i*2]/(3**0.5)))*
+                    np.cos(np.pi/scale*(x[i*2+1]-x[i*2]/(3**0.5))))**2 +C_2 
+                    for i in range(len(flap_lengths))]
+                )
             )  # TODO: fix
 
     solution = minimize(objective, x0, bounds=bounds, constraints=cons)
@@ -223,7 +224,7 @@ def create_octagon(center, radius, n):
         np.pi / n
     )  # Adjust radius to be from center to vertex
     angles = (
-        np.linspace(0, 2 * np.pi, n + 1)[:-1] + np.pi / n
+        np.linspace(0, 2 * np.pi, n + 1)[:-1] + np.pi / n + np.pi/2
     )  # 8 angles for the octagon, rotated by 22.5 degrees
     vertices = [
         (
@@ -246,15 +247,49 @@ def display_multiple(x_list, flap_lengths_list, ngon=8):
 
     for idx, (x, flap_lengths) in enumerate(zip(x_list, flap_lengths_list)):
         scale = x[-1]
+        if ngon==6:
+            grid = 2/(scale*3**0.5)
+        else:
+            grid = 1/scale
         ax = axs[idx]
+        if ngon==4:
+            # Draw the grid
+            for i in range(1, int(grid)+1):
+                ax.axhline(y=i*scale, color="grey", linestyle="-",linewidth=0.5)
+                ax.axvline(x=i * scale, color="grey", linestyle="-",linewidth=0.5)
+        if ngon==6:
+            # Draw the hex grid
+            for i in range(1, int(grid)+1):
+                # ax.axhline(y=i*scale*3**0.5, color="grey", linestyle="-",linewidth=0.5)
+                ax.axvline(x=i/grid, color="grey", linestyle="-",linewidth=0.25)
+            for i in range(int(-grid*3**0.5),int(grid*(1+3**0.5)),2):
+                ax.add_line(Line2D(
+                    [i/grid,i/grid+3**0.5],
+                    [0,1],
+                    color="grey", linestyle="-",linewidth=0.25
+                ))
+                ax.add_line(Line2D(
+                    [i/grid,i/grid-3**0.5],
+                    [0,1],
+                    color="grey", linestyle="-",linewidth=0.25
+                ))
         for i in range(len(flap_lengths)):
             center = (x[i * 2], x[i * 2 + 1])
             radius = flap_lengths[i] * scale
             if ngon:
+                polygon_points = create_octagon(center, radius, ngon)
                 polygon = Polygon(
-                    create_octagon(center, radius, ngon), fill=False, edgecolor="blue"
+                    polygon_points, fill=False, edgecolor="blue"
                 )
                 ax.add_artist(polygon)
+                # lines = []
+                for i in range(ngon // 2):
+                    start_point = polygon_points[i]
+                    end_point = polygon_points[i + ngon // 2]
+                    line = Line2D([start_point[0], end_point[0]], [start_point[1], end_point[1]], color="red")
+                    ax.add_artist(line)
+                    # lines.append(line)
+
             point = plt.Circle(center, 0.01, color="black")
             circle = plt.Circle(center, radius, fill=False, edgecolor="grey")
             ax.add_artist(point)
@@ -262,24 +297,29 @@ def display_multiple(x_list, flap_lengths_list, ngon=8):
         ax.set_aspect("equal")
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
-        ax.set_title(f"Scale: {x[-1]:.3f},grid:{1/x[-1]:.3f}")
+        ax.set_title(f"Scale: {x[-1]:.3f},grid:{grid:.3f}")
 
     plt.show()
 
 
 # Example usage
-N = 30
+t0 = time.time()
+N = 70
 n = 6
 flap_lengths_list = [
-    [2, 2, 2, 3, 3, 1, 1, 1, 1],
+    # [2, 2, 2, 3, 3, 1, 1, 1, 1],
+    [3,3,3,3,6,6,6,9,9]
     # [1+2**0.5, 1+2**0.5, 1+2**0.5, 1+2**0.5,1+2**0.5, 1,1,1,1],
     # [1+2**0.5, 1+2**0.5, 1+2**0.5, 1+2**0.5,1],
     # [1+2**0.5, 1+2**0.5,1,1]
     # [1,1,1]
 ] * N
-x_list = [pack(flap_lengths, mode="bp") for flap_lengths in flap_lengths_list]
+x_list = [pack(flap_lengths, mode="circle") for flap_lengths in flap_lengths_list]
 top_n_solutions = sorted(x_list, key=lambda x: x[-1], reverse=True)[:n]
-display_multiple(top_n_solutions, flap_lengths_list[:n])
+
+# oct_list = [pack(flap_lengths, mode="22.5", x0=top_solution) for flap_lengths, top_solution in zip(flap_lengths_list, top_n_solutions)]
+display_multiple(top_n_solutions, flap_lengths_list[:n], ngon=None)
+print(f"Time taken: {time.time() - t0:.2f}s")
 """
 Comments
 
